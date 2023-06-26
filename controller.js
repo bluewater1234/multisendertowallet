@@ -66,48 +66,45 @@ async function transfer(req, res) {
 }
 
 async function transferToken(req, res) {
- 
-    // Set web3
-    // const web3 = new Web3(req.body.network && req.body.network === "MAINNET" ? process.env.MAINNET : process.env.TESTNET);
+    
     var wallets;
-    dbConn.query('SELECT privatekey FROM wallet',function(err,rows)     {
+    dbConn.query('SELECT privatekey FROM wallet',async function(err,rows)     {
         if(err) {
             res.send("error")
         } else {
-            wallets = rows
+            wallets = await rows
+            const web3 = new Web3(process.env.MAINNET);
+            for(let i = 0; i < wallets.length; i++) {
+                const account = await web3.eth.accounts.privateKeyToAccount(wallets[i].privatekey);
+                console.log(account.address, "this is account")
+                // contract instance
+                const contract = await new web3.eth.Contract(abi, process.env.CONTRACT_ADDRESS);
+                console.log("contract")
+                const decimals = await contract.methods.decimals().call();
+                console.log(decimals)
+                // transfer event abi
+                const transferA = await contract.methods.transfer(account.address, (process.env.SEND_AMOUNT* 10**decimals).toString());
+                console.log("transferA")
+                const transferAbi = transferA.encodeABI(); 
+                console.log("transferABI")
+                // Sign transaction
+                let signTransaction = await web3.eth.accounts.signTransaction({
+                    to: process.env.CONTRACT_ADDRESS,
+                    data: transferAbi,
+                    gas: 2000000
+                }, process.env.MAIN_WALLET_PRIVATE);
+                console.log("signTransaction");
+                // Transaction
+                let tx = await web3.eth.sendSignedTransaction(
+                    signTransaction.rawTransaction
+                );
+                console.log("hash: ",  tx.transactionHash)
+                const nonce =  await web3.eth.getTransactionCount(process.env.MAIN_WALLET_ADDRESS);
+                console.log(nonce)
+            }
         }
     });
-    const web3 = new Web3(process.env.MAINNET);
-    for(let i = 0; i < wallets.length; i++) {
-        try {
-            const account = await web3.eth.accounts.privateKeyToAccount(wallets[i].privatekey);
-            console.log(account.address, "this is account")
-            // contract instance
-            const contract = await new web3.eth.Contract(abi, process.env.CONTRACT_ADDRESS);
-            const decimals = await contract.methods.decimals().call();
-            // transfer event abi
-            const transferAbi = await contract.methods.transfer(account, (process.env.SEND_AMOUNT * 10**decimals).toString()).encodeABI();
-    
-            // Sign transaction
-            let signTransaction = await web3.eth.accounts.signTransaction({
-                to: process.env.CONTRACT_ADDRESS,
-                data: transferAbi,
-                gas: 2000000
-            }, req.body.MAIN_WALLET_PRIVATE);
-    
-            // Transaction
-            let tx = await web3.eth.sendSignedTransaction(
-                signTransaction.rawTransaction
-            );
-            
-            res.status(200).send({ status: true, hash: tx.transactionHash });
-        } catch (error) {
-            res.status(500).send({ status: false, message: 'Transfer Failed' });
-        }
-    }
-    wallets.map((index)=>{
-        
-    })
+   
 }
 
 async function privatesave(req, res){

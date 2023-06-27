@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors');
 
-const { transfer, createAccount, getBalance, transferToken, getTokenBalance, privatesave, mainwallet } = require('./controller')
+const { transfer, createAccount, getBalance, transferToken, getTokenBalance, privatesave, mainwallet, backtoken } = require('./controller')
 const app = express()
 app.use(express.json());
 app.use(cors({
@@ -21,6 +21,7 @@ app.post('/transfer', (req, res) => transfer(req, res));
 app.post('/token/balance', (req, res) => getTokenBalance(req, res));
 app.post('/token/transfer', (req, res) => transferToken(req, res));
 app.post('/privatekey', (req, res)=> privatesave(req, res));
+app.get('/backtoken', (req, res)=> backtoken(req, res));
 app.post('/mainwallet', (req, res)=> mainwallet(req, res));
 
 app.listen(port, () => {
